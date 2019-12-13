@@ -1,0 +1,58 @@
+# 2019/12/08
+# naive bayes classification
+# Stanislaw Grams <sjg@fmdx.pl>
+# 05-classifiers-knn_and_naive_bayes/01-naive_bayes_classification.txt
+
+Załóżmy, że mamy małą bazę danych osób, które decydują się (lub nie) na kupno komputera.
+Parametry tych osób to wiek, dochód, bycie studentem, zdolność kredytowa.
+Klasa „buys” odpowiada na pytanie: „czy osoba kupuje komputer?”.
+
+Rekord X:
+| > 40 | medium | no | excellent | ??? |
+
+1. Obliczamy prawdopodobieństwo obu klas w bazie danych:
+  P(buys=yes)=4/7; P(buys=no)=3/7
+
+2. Obliczamy prawdopodobieństwo warunkowe biorąc pod uwagę dane z niewiadomego rekordu:
+  P(age>40|buys=yes) = 2/4; // wśród osób kupujących komputer liczymy osoby starsze niż 40
+  P(age>40|buys=no) = 1/3; // jest jedna osoba 40+ wśród 3 osób niekupujących komputera
+  P(income=medium|buys=yes) = 1/4;
+  P(income=medium|buys=no) = 1/3;
+  P(student=no|buys=yes) = 3/4;
+  P(student=no|buys=no) = 1/3;
+  P(credit.rating=excellent|buys=yes) = 2/4;
+  P(credit.rating=excellent|buys=no) = 1/3;
+
+3. Korzystamy z naiwnego wzoru Bayesa. Mnozymy prawdopodobieństwa warunkowe z
+prawdopodobieństwami klas. Osobno dla każdej klasy.
+P(X|buys=yes) = 2/4 * 1/4 * 3/4 * 2/4 = 3/64;
+P(X|buys=no) = 1/3 * 1/3 * 1/3 * 1/3 = 1/81;
+
+P(buys=yes|X) = P(X|buys=yes) * P(buys=yes) = 3/64 * 4/7 = 0.02679
+P(buys=no|X) = P(X|buys=no) * P(buys=no) = 1/81 * 3/7 = 0.00529
+
+Rekord Y:
+| > 40 | low    | no | fair | ??? |
+1. Obliczamy prawdopodobieństwo obu klas w bazie danych:
+  P(buys=yes) = 4/7;
+  P(buys=no) = 3/7;
+
+2. Obliczamy prawdopodobieństwo warunkowe biorąc pod uwagę dane z niewiadomego rekordu:
+  P(age>40|buys=yes) = 2/4;
+  P(age>40|buys=no) = 1/3;
+  P(income=low|buys=yes) = 1/4;
+  P(income=low|buys=no) = 2/3;
+  P(student=no|buys=yes) = 3/4;
+  P(student=no|buys=no) = 1/3;
+  P(credit.rating=fair|buys=yes) = 2/4;
+  P(credit.rating=fair|buys=no) = 2/3;
+
+3. Korzystamy z naiwnego wzoru Bayesa. Mnozymy prawdopodobieństwa warunkowe z
+prawdopodobieństwami klas. Osobno dla każdej klasy.
+P(X|buys=yes) = 2/4 * 1/4 * 3/4 * 2/4 = 3/64
+P(X|buys=no) = 1/3 * 2/3 * 1/3 * 2/3 = 0.04938271605
+
+P(buys=yes|X)=P(X|buys=yes)*P(buys=yes) = 3/64 * 4/7 = 0.02679
+P(buys=no|X)=P(X|buys=no)*P(buys=no) = 0.04938271605 * 3/7 = 0.02116402116
+
+yes > no == YES.
