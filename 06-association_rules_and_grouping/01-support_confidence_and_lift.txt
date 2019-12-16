@@ -1,0 +1,30 @@
+# 2019/12/15
+# Support, confidence and lift
+# Stanislaw Grams <sjg@fmdx.pl>
+# 06-association_rules_and_grouping/01-support_confidence_and_lift.txt
+
+a) Dla tabeli z kupnem produktów oblicz wsparcie i ufność następujących reguł:
+A2: { chleb=TRUE }            => { piwo=TRUE and czipsy=TRUE}
+A3: { piwo=TRUE }             => { czipsy=TRUE }
+A4: { czipsy=TRUE }           => { piwo=TRUE }
+A5: { masło=TRUE and ser=TRUE }  => { chleb=TRUE }
+
+support(A2) = 4/10 = 0.4
+support(A3) = 5/10 = 0.5
+support(A4) = 5/10 = 0.5
+support(A5) = 2/10 = 0.2
+
+confidence(A2) = support(A2) / support ({chleb=TRUE}) = 0.4 / 0.9 = 4/10 * 10/9 = 4/9
+confidence(A3) = support(A3) / support ({piwo=TRUE}) = 0.5 / 0.7 = 5/10 * 10/7 = 5/7
+confidence(A4) = support(A4) / support ({czipsy=TRUE}) = 0.5 / 0.5 = 5/10 * 10/5 = 1
+confidence(A5) = support(A5) / support ({masło=TRUE and ser=TRUE}) = 0.2 / 0.2 = 1
+
+lift (A2) = confidence (A2) / support ({piwo=TRUE and czipsy=TRUE}) = 4/9 / 5/10 = 4/9 * 10/5 = 40/45 = 8/9 (~0.88)
+lift (A3) = confidence (A3) / support ({czipsy=TRUE}) = 5/7 / 5/10 = 5/7 * 10/5 = 10/7 (~1.43)
+lift (A4) = confidence (A4) / support ({piwo=TRUE}) = 1 / 7/10 = 1 * 10/7 = 10/7 (~1.43)
+lift (A5) = confidence (A5) / support ({chleb=TRUE}) = 1 / 9/10 = 1 * 10/9 = 1/9 (~1.11)
+
+b) Znajdź regułę o jak największym wsparciu (minimum 0.5) i jak największej ufności (minimum 0.8). Policz dodatkowo jej przyrost. W regule możesz też uwzględnić etykietki „FALSE” zamiast „TRUE”.
+A4: support = 1.0, confidence=1.0
+
+c) na kartce
