@@ -12,6 +12,7 @@ from sklearn.tree        import DecisionTreeClassifier
 from sklearn.neighbors   import KNeighborsClassifier
 from sklearn.naive_bayes import GaussianNB
 
+## classifying functions
 def knn (training_set, k):
     knn = KNeighborsClassifier (n_neighbors=k)
     knn.fit (training_set.drop ('class', axis=1), training_set['class'])
@@ -27,6 +28,7 @@ def tree (training_set):
     tree.fit (training_set.drop ('class', axis=1), training_set['class'])
     return tree
 
+## helper getters
 def get_score (classifier, testing_set):
     return classifier.score (testing_set.drop ('class', axis=1), testing_set['class'])
 
@@ -48,18 +50,18 @@ nn11 = knn (training_set, 11)
 tree = tree (training_set)
 gnb  = gnb (training_set)
 
-
 functions   = [nn3, nn5, nn11, tree, gnb]
 classifiers = ["3NN", "5NN", "11NN", "tree", "naive_bayes"]
 scores      = [get_score (x, testing_set) for x in functions]
 
+## confusion matrices
 for classifier, function, score in zip (classifiers, functions, scores):
-    print ("\nconfusion matrix for " + classifier + " classifier")
+    print ("\n" + classifier + " classifier")
+    print ("accuracy = " + str(round (score * 100, 2)) + "%")
     print (get_confusion_matrix (function, testing_set))
-    print ("accuracy = " + str (score))
 
 ## bar chart
 plt.bar (classifiers, scores, align='center')
-plt.ylabel ("Scores")
-plt.xlabel ("Classifier")
+plt.ylabel ("score")
+plt.xlabel ("classifier")
 plt.show ()
