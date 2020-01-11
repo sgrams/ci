@@ -2,7 +2,7 @@
 # 2020/01/11
 # K-means clustering
 # Stanislaw Grams <sjg@fmdx.pl>
-# 06-association_rules_and_grouping/02-k_means_clustering.py
+# 06-association_rules_and_clustering/02-k_means_clustering.py
 import numpy    as np
 import pandas   as pd
 import matplotlib.pyplot as plt

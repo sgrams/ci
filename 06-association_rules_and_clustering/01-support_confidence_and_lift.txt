@@ -1,7 +1,7 @@
 # 2019/12/15
 # Support, confidence and lift
 # Stanislaw Grams <sjg@fmdx.pl>
-# 06-association_rules_and_grouping/01-support_confidence_and_lift.txt
+# 06-association_rules_and_clustering/01-support_confidence_and_lift.txt
 
 a) Dla tabeli z kupnem produktów oblicz wsparcie i ufność następujących reguł:
 A2: { chleb=TRUE }            => { piwo=TRUE and czipsy=TRUE}
