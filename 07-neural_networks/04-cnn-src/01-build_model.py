@@ -89,7 +89,7 @@ history = model.fit_generator (
     validation_steps=nb_validation_samples // BATCH_SIZE
 )
 
-cur_datetime = datetime.now ().strftime ("%d/%m/%Y %H:%M:%S")
+cur_datetime = datetime.now ().strftime ("%d%m%Y-%H%M%S")
 model.save (ASSETS_DIR + '/cnn-MODEL-' + cur_datetime + '.keras_model');
 
 import json

@@ -39,8 +39,11 @@ probabilities = model.predict_generator (test_generator, verbose=1)
 ## perform testing and display 25 randomly chosen samples
 import random
 fig = plt.figure ()
-for index, probability in enumerate (random.sample (probabilities, k=25)):
-    y = fig.add_subplot (5, 5, index+1, ymargin=20.0, xmargin=20.0)
+fig.tight_layout ()
+img_num = 0
+for index, probability in random.sample (list (enumerate (probabilities)), k=25):
+    img_num += 1
+    y = fig.add_subplot (5, 5, img_num, ymargin=15, xmargin=15)
     y.imshow (X_test[index])
     if probability > 0.5:
         plt.title ("%.2f" % (probability[0] * 100) + "% dog")
@@ -48,7 +51,7 @@ for index, probability in enumerate (random.sample (probabilities, k=25)):
         plt.title ("%.2f" % ((1-probability[0])*100) + "% cat")
     y.axes.get_xaxis ().set_visible (False)
     y.axes.get_yaxis ().set_visible (False)
-cur_datetime = datetime.now ().strftime ("%d/%m/%Y %H:%M:%S")
+cur_datetime = datetime.now ().strftime ("%d%m%Y-%H%M%S")
 fig.savefig (ASSETS_DIR + '/cnn-SAMPLES-' + cur_datetime + '.png', format='png')
 
 ## perform evaluation
