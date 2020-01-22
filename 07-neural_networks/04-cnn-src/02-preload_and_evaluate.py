@@ -39,12 +39,13 @@ probabilities = model.predict_generator (test_generator, verbose=1)
 ## perform testing and display 25 randomly chosen samples
 import random
 fig = plt.figure ()
-fig.tight_layout ()
 img_num = 0
 for index, probability in random.sample (list (enumerate (probabilities)), k=25):
     img_num += 1
     y = fig.add_subplot (5, 5, img_num, ymargin=15, xmargin=15)
     y.imshow (X_test[index])
+    y.set_aspect('equal')
+    plt.tight_layout ()
     if probability > 0.5:
         plt.title ("%.2f" % (probability[0] * 100) + "% dog")
     else:

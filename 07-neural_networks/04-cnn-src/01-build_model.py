@@ -94,4 +94,4 @@ model.save (ASSETS_DIR + '/cnn-MODEL-' + cur_datetime + '.keras_model');
 
 import json
 with open(ASSETS_DIR + '/cnn-HISTORY-' + cur_datetime + '.json', 'w') as f:
-        json.dump (history.history, f)
+        json.dump (str (history.history), f)
