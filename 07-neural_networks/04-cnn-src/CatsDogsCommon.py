@@ -1,6 +1,7 @@
 #!/bin/env python
 # 2020/01/21
 # Convolution Neural Network
+# Stanislaw Grams <sjg@fmdx.pl>
 # 07-neural_networks/04-cnn-src/CatsDogsCommon.py
 import os, cv2, regex, random
 

@@ -1,6 +1,7 @@
 #!/bin/env python
 # 2020/01/18
 # Convolution Neural Network
+# Stanislaw Grams <sjg@fmdx.pl>
 # 07-neural_networks/04-cnn-src/01-build_model.py
 from CatsDogsCommon import *
 from datetime import datetime

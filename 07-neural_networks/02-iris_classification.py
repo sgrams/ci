@@ -1,6 +1,7 @@
 #!/bin/env python
 # 2020/01/12
 # Iris classification, neural network with 3 outputs
+# Stanislaw Grams <sjg@fmdx.pl>
 # 07-neural_networks/02-iris_classification.py
 import numpy as np
 import pandas as pd

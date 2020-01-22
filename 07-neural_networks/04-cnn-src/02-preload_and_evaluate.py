@@ -1,6 +1,7 @@
 #!/bin/env python
 # 2020/01/21
 # Convolution Neural Network
+# Stanislaw Grams <sjg@fmdx.pl>
 # 07-neural_networks/04-cnn-src/02-preload_and_evaluate.py
 import sys
 import getopt
