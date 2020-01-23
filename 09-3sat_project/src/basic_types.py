@@ -3,6 +3,8 @@
 Stanislaw Grams <sjg@fmdx.pl>
 09-3sat_project/src/basic_types.py
 """
+import random
+
 class Equation():
     """
     describes a CNF equation
@@ -51,6 +53,7 @@ class Equation():
     def literals(self) -> list:
         """ returns list of literals in equation """
         return self._literals
+
 
 class Chromosome():
     """ represents a single chromosome - solution to 3-SAT equation """
@@ -123,3 +126,64 @@ class Chromosome():
     def copy(self):
         """ copies itself into new object """
         return Chromosome(self._equation, self._genes[:])
+
+
+class Population():
+    """ represents population of chromosomes """
+    def __init__(self, size: int, equation: Equation):
+        self._size = size
+        self._equation = equation
+        self._chromosomes = []
+        self._best = None
+
+    def __getitem__(self, index: int) -> Chromosome:
+        """ returns chromosome at given index """
+        return self._chromosomes[index]
+
+    def __len__(self):
+        return len(self._chromosomes)
+
+    def __repr__(self):
+        return str(self._chromosomes)
+
+    def __setitem__(self, key: int, value: Chromosome):
+        """ sets chromosome at given index """
+        self._chromosomes[key] = value
+
+    @property
+    def equation(self) -> Equation:
+        """ returns assigned equation """
+        return self._equation
+
+    @property
+    def best(self):
+        """ returns the best chromosome """
+        if self._best is None:
+            for chromosome in self._chromosomes:
+                if self._best is None:
+                    self._best = chromosome
+                else:
+                    if self._best.fitness < chromosome.fitness:
+                        self._best = chromosome
+        return self._best
+
+    @property
+    def chromosomes(self) -> list:
+        """ returns list of population's chromosomes """
+        return self._chromosomes[:]
+
+    @property
+    def size(self) -> int:
+        """ returns size of population """
+        return self._size
+
+    def push(self, chromosome: Chromosome):
+        """ pushes new chromosome to the population """
+        self._chromosomes.append(chromosome)
+        self._best = None
+
+    def initialize(self):
+        """ initializes population with random chromosomes """
+        for _ in range(self.size):
+            genes = [random.choice([0, 1]) for _ in range(self.equation.variables)]
+            self.push(Chromosome(self.equation, genes))

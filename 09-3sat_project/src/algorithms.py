@@ -33,14 +33,14 @@ class Genetic():
 
     @staticmethod
     def crossover(parent_a: Chromosome, parent_b: Chromosome) -> Chromosome:
-        """ randombly returns a child from crossover of parent_a and parent_b """
+        """ randomly returns a child from crossover of parent_a and parent_b """
 
         if len(parent_a) == 2:
             index = 1
         else:
             index = random.randint(0, len(parent_a) - 2)
 
-        genes = parent_a[0:index] + parent_b[index:]
+        genes = parent_a[:index] + parent_b[index:]
         return Chromosome(parent_a.equation, genes)
 
     @staticmethod
@@ -51,10 +51,12 @@ class Genetic():
         indexes = []
 
         # mutate all genes
-        for _ in range(random.randint(1, len(chromosome - 1))):
+        for _ in range(random.randint(1, len(chromosome) - 1)):
             choice = random.choice(avail_genes)
             indexes.append(choice)
             avail_genes.remove(choice)
+
+        ## flip genes for chosen indexes
         for index in indexes:
             genes[index] = int(not genes[index])
 
@@ -80,10 +82,10 @@ class Genetic():
                 if random.random() <= self._mutation_rate:
                     child = self.mutation(child)
 
-            ## add result child to population
-            evolved_population.push(child)
+                ## add result child to population
+                evolved_population.push(child)
 
-        ## add the best gene from previous population to evolved one
+        ## elitism - add the best gene from previous population to evolved one
         population_diff = len(population) - len(evolved_population)
 
         if population_diff > 0:
