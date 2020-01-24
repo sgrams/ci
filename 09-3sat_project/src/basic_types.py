@@ -54,6 +54,21 @@ class Equation():
         """ returns list of literals in equation """
         return self._literals
 
+    def validate(self, solution: list) -> bool:
+        """ validates solution against 3-SAT formula """
+        passed_clauses = 0
+        for triplet in self.literals:
+            for literal in triplet:
+                if literal < 0:
+                    if not solution[abs(literal) - 1]:
+                        passed_clauses += 1
+                        break
+                else:
+                    if solution[literal - 1]:
+                        passed_clauses += 1
+                        break
+        return passed_clauses, passed_clauses == self.clauses
+
 
 class Chromosome():
     """ represents a single chromosome - solution to 3-SAT equation """
@@ -184,6 +199,7 @@ class Population():
 
     def initialize(self):
         """ initializes population with random chromosomes """
+        random.seed(a=None, version=2)
         for _ in range(self.size):
             genes = [random.choice([0, 1]) for _ in range(self.equation.variables)]
             self.push(Chromosome(self.equation, genes))
