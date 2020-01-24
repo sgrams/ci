@@ -163,7 +163,7 @@ class Population():
                 if self._best is None:
                     self._best = chromosome
                 else:
-                    if self._best.fitness < chromosome.fitness:
+                    if self._best.fitness <= chromosome.fitness:
                         self._best = chromosome
         return self._best
 

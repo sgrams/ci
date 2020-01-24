@@ -39,11 +39,13 @@ class Dimacs():
                     is_desc = regex.match(r"^" + DIMACS_DESC_CHAR, line)
                     is_clause = regex.match(r"^[0-9]|^\-", line)
                     line_splitted = line.rsplit()
+                    clauses_read = 0
 
                     if is_desc:
                         variables = int(line_splitted[DIMACS_VARS_INDEX])
                         clauses = int(line_splitted[DIMACS_CLAUSES_INDEX])
-                    if is_clause:
+                    if is_clause and clauses_read <= clauses:
+                        clauses_read += 1
                         clause = [int(line_splitted[i]) for i in range(3)]
                         literals_list.append(tuple(clause))
             return Equation(variables, clauses, literals_list)

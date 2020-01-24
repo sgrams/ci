@@ -4,15 +4,20 @@ Stanislaw Grams <sjg@fmdx.pl>
 09-3sat_project/src/algorithms.py
 """
 import random
+from copy import deepcopy
 from basic_types import Chromosome
 from basic_types import Population
 
-class Genetic():
+class StandardGenetic():
     """ implements standard genetic algorithm """
 
-    def __init__(self, crossover_rate: float, mutation_rate: float):
-        self._crossover_rate = crossover_rate
-        self._mutation_rate = mutation_rate
+    def __init__(self, rates: [float, float], elitism: bool,
+                 population_size: int, generations: int):
+        self._crossover_rate = rates[0]
+        self._mutation_rate = rates[1]
+        self._elitism = elitism
+        self._population_size = population_size
+        self._generations = generations
 
     @staticmethod
     def selection(fitnesses: list) -> int:
@@ -43,16 +48,19 @@ class Genetic():
         genes = parent_a[:index] + parent_b[index:]
         return Chromosome(parent_a.equation, genes)
 
-    @staticmethod
-    def mutation(chromosome: Chromosome) -> Chromosome:
+    def mutation(self, chromosome: Chromosome) -> Chromosome:
         """ randomly mutates a given chromosome"""
         genes = chromosome.genes[:]
-        avail_genes = list(range(len(chromosome)))
+        avail_genes = set(range(len(chromosome)))
         indexes = []
 
         # mutate all genes
-        for _ in range(random.randint(1, len(chromosome) - 1)):
-            choice = random.choice(avail_genes)
+        if self._elitism is True:
+            range_begin = 1
+        else:
+            range_begin = 0
+        for _ in range(random.randint(range_begin, len(chromosome) - 1)):
+            choice = random.choice(list(avail_genes))
             indexes.append(choice)
             avail_genes.remove(choice)
 
@@ -62,41 +70,55 @@ class Genetic():
 
         return Chromosome(chromosome.equation, genes)
 
-    def evolution(self, population: Population) -> Population:
-        """ a single evolution of given population """
+    def run(self, equation) -> Population:
+        """ executes SGA against given equation """
 
-        ## create object for evolved population
-        evolved_population = Population(population.size, population.equation)
+        ## create initial population
+        population = Population(self._population_size, equation)
+        population.initialize()
 
-        ## fitness calculation
-        fitnesses = [chromosome.fitness for chromosome in population]
+        ## iterate over generations
+        for _ in range(self._generations):
+            ## create new population
+            new_population = Population(self._population_size, equation)
 
-        ## proper evolution
-        for _ in range(len(population)):
-            parent_a = population[self.selection(fitnesses)]
-            parent_b = population[self.selection(fitnesses)]
+            ## fitness calculation
+            fitnesses = [chromosome.fitness for chromosome in population]
 
-            ## perform crossover and mutate the result
-            if random.random() <= self._crossover_rate:
-                child = self.crossover(parent_a, parent_b)
-                if random.random() <= self._mutation_rate:
-                    child = self.mutation(child)
+            ## elitism: keep the best individual from previous generation
+            if self._elitism is True:
+                previous_chromosomes = list(population.chromosomes[:])
+                previous_chromosomes.sort(key=lambda x: x.fitness, reverse=True)
+                new_population.push(previous_chromosomes[0])
+                fitnesses = fitnesses[1:]
 
-                ## add result child to population
-                evolved_population.push(child)
 
-        ## elitism - add the best gene from previous population to evolved one
-        population_diff = len(population) - len(evolved_population)
+            ## proper evolution
+            for _ in range(len(population)):
+                parent_a = population[self.selection(fitnesses)]
+                parent_b = population[self.selection(fitnesses)]
 
-        if population_diff > 0:
-            ## select best gene
-            previous_chromosomes = list(population.chromosomes[:])
-            previous_chromosomes.sort(key=lambda x: x.fitness, reverse=True)
+                ## perform crossover and mutate the result
+                if random.random() <= self._crossover_rate:
+                    child = self.crossover(parent_a, parent_b)
+                    if random.random() <= self._mutation_rate:
+                        child = self.mutation(child)
 
-            population_supplements = previous_chromosomes[:population_diff]
+                    ## add result child to population
+                    new_population.push(child)
 
-            for supplement in population_supplements:
-                evolved_population.push(supplement)
+                population_diff = len(population) - len(new_population)
+
+            if population_diff > 0:
+                ## select best genes
+                previous_chromosomes = list(population.chromosomes[:])
+                previous_chromosomes.sort(key=lambda x: x.fitness, reverse=True)
+
+                population_supplements = previous_chromosomes[:population_diff]
+
+                for supplement in population_supplements:
+                    new_population.push(supplement)
+            population = deepcopy(new_population)
 
         ## return evolved population
-        return evolved_population
+        return population
