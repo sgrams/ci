@@ -187,6 +187,10 @@ class Population():
         """ returns list of population's chromosomes """
         return self._chromosomes[:]
 
+    @chromosomes.setter
+    def chromosomes(self, chromosomes: list):
+        self._chromosomes = chromosomes
+
     @property
     def size(self) -> int:
         """ returns size of population """

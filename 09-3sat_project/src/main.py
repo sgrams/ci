@@ -11,7 +11,7 @@ from algorithms import DPLL
 
 def main():
     """ main function """
-    dimacs = Dimacs(filepath="../data/uf20/uf20-01.cnf")
+    dimacs = Dimacs(filepath="../data/uf20/uf20-091.cnf")
     equation = dimacs.parse()
     is_file_valid = dimacs.validate()
     print(is_file_valid)
@@ -19,11 +19,11 @@ def main():
     ## test genetic algorithm
     #crossover_rate = 0.9
     #mutation_rate = 0.08
-    population_size = 100
+    population_size = 80
     generations = 10000
     #elitism = True
 
-    adaptive_algorithm = AdaptiveGenetic(100, population_size, generations)
+    adaptive_algorithm = AdaptiveGenetic(10, population_size, generations)
     best_population = adaptive_algorithm.run(equation, verbose=True)
 
     #genetic_algorithm = StandardGenetic([crossover_rate, mutation_rate], elitism,
