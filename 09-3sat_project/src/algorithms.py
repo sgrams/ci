@@ -3,8 +3,9 @@
 Stanislaw Grams <sjg@fmdx.pl>
 09-3sat_project/src/algorithms.py
 """
+import os
 import random
-import sys
+from copy import copy
 from copy import deepcopy
 from timeit import default_timer as timer
 from basic_types import Chromosome
@@ -129,6 +130,7 @@ class StandardGenetic():
 
     def __init__(self, rates: [float, float], elitism: bool,
                  population_size: int, generations: int):
+        random.seed(a=os.urandom)
         self._crossover_rate = rates[0]
         self._mutation_rate = rates[1]
         self._elitism = elitism
@@ -213,6 +215,7 @@ class StandardGenetic():
 
             ## fitness calculation
             best_population = previous_chromosomes[:int(self._population_size / 2)]
+            best_population += best_population
             fitnesses = [chromosome.fitness for chromosome in best_population]
 
             ## proper evolution
@@ -253,7 +256,7 @@ class StandardGenetic():
                     new_population.push(supplement)
 
             ## new_population is the new population
-            population = deepcopy(new_population)
+            population = copy(new_population)
 
             ## print result for generation if verbose issued
             if verbose is True:
@@ -261,7 +264,7 @@ class StandardGenetic():
                     print("generation %i: fitness=%f" % (generation, population.best.fitness))
 
         ## return evolved population
-        return deepcopy(population)
+        return copy(population)
 
 class AdaptiveGenetic(StandardGenetic):
     """ implements improved adaptive genetic algorithm """
@@ -269,6 +272,7 @@ class AdaptiveGenetic(StandardGenetic):
                  population_size: int, generations: int):
         StandardGenetic.__init__(self, [0.00, 0.00], False, population_size, \
                                  generations)
+        random.seed(a=os.urandom(1))
         self._restart_rate = restart_rate
         self._population_size = population_size
         self._generations = generations
@@ -315,6 +319,7 @@ class AdaptiveGenetic(StandardGenetic):
     def crossover_and_mutation(self, new_population: Population,
                                population: Population, generation: int):
         """ crossover and mutation """
+        infinitesimal = 0.00000000000000001
         fitnesses = [chromosome.fitness for chromosome in population]
         for _ in range(len(population)):
             ## crossover and mutation operation (based on g ≤ 0.75 * G)
@@ -335,21 +340,21 @@ class AdaptiveGenetic(StandardGenetic):
 
             ## adaptively calculate crossover_rate
             if generation <= 0.75 * self._generations:
-                if ((max_fit - avg_fit) / (avg_fit - min_fit + sys.float_info.epsilon) < 1.0) and (var_m1 > var_m2):
-                    self._crossover_rate = 0.8 * ((max_fit - avg_fit) / (avg_fit - min_fit + sys.float_info.epsilon))
+                if ((max_fit - avg_fit) / (avg_fit - min_fit + infinitesimal) < 1.0) and (var_m1 > var_m2):
+                    self._crossover_rate = 0.8 * ((max_fit - avg_fit) / (avg_fit - min_fit + infinitesimal))
                 else:
                     self._crossover_rate = 0.9 - \
-                    ((0.3 * (fprim - min_fit)) / (max_fit - min_fit + sys.float_info.epsilon))
+                    ((0.3 * (fprim - min_fit)) / (max_fit - min_fit + infinitesimal))
             else:
-                if ((max_fit - avg_fit) / (avg_fit - min_fit + sys.float_info.epsilon) < 1.0) and (var_m1 > var_m2):
-                    self._crossover_rate = 0.8 * (fzero - max_fit) / (fzero - avg_fit + sys.float_info.epsilon)
+                if ((max_fit - avg_fit) / (avg_fit - min_fit + infinitesimal) < 1.0) and (var_m1 > var_m2):
+                    self._crossover_rate = 0.8 * (fzero - max_fit) / (fzero - avg_fit + infinitesimal)
                 else:
                     self._crossover_rate = 0.9 - \
-                    (0.3 * (fzero - max_fit) / (fzero - fprim + sys.float_info.epsilon))
+                    (0.3 * (fzero - max_fit) / (fzero - fprim + infinitesimal))
             if random.random() <= self._crossover_rate:
                 ## crossover
                 child = self.crossover(parent_a, parent_b)
-                child_saved = deepcopy(child)
+                child_saved = child
 
                 ## mutate but decision will be taken later
                 child = self.mutation(child)
@@ -357,24 +362,23 @@ class AdaptiveGenetic(StandardGenetic):
 
                 ## adaptively calculate mutation rate
                 if generation <= 0.75 * self._generations:
-                    if ((max_fit - avg_fit) / (avg_fit - min_fit + sys.float_info.epsilon) < 1.0) and (var_m1 > var_m2):
-                        self._mutation_rate = 0.1 * (max_fit - avg_fit) / (avg_fit - min_fit + sys.float_info.epsilon)
+                    if ((max_fit - avg_fit) / (avg_fit - min_fit + infinitesimal) < 1.0) and (var_m1 > var_m2):
+                        self._mutation_rate = 0.1 * (max_fit - avg_fit) / (avg_fit - min_fit + infinitesimal)
                     else:
                         self._mutation_rate = 0.1 - \
-                        (0.09 * (feps - min_fit) / (max_fit - min_fit + sys.float_info.epsilon))
+                        (0.09 * (feps - min_fit) / (max_fit - min_fit + infinitesimal))
                 else:
-                    if ((max_fit - avg_fit) / (avg_fit - min_fit + sys.float_info.epsilon) < 1.0) and (var_m1 > var_m2):
-                        self._mutation_rate = 0.1 * (fzero - max_fit) / (fzero - avg_fit + sys.float_info.epsilon)
+                    if ((max_fit - avg_fit) / (avg_fit - min_fit + infinitesimal) < 1.0) and (var_m1 > var_m2):
+                        self._mutation_rate = 0.1 * (fzero - max_fit) / (fzero - avg_fit + infinitesimal)
                     else:
                         self._mutation_rate = 0.1 - \
-                        (0.09 * (fzero - max_fit) / (fzero - feps))
+                        (0.09 * (fzero - max_fit) / (fzero - feps + infinitesimal))
 
                 ## if rate lower than expected then restore unmutated child
                 if random.random() <= self._mutation_rate:
                     new_population.push(child)
                 else:
-                    child = deepcopy(child_saved)
-                    new_population.push(child)
+                    new_population.push(child_saved)
 
             population_diff = len(population) - len(new_population)
             if population_diff > 0:
@@ -409,29 +413,29 @@ class AdaptiveGenetic(StandardGenetic):
                     break
 
                 ## save old population
-                old_population = deepcopy(population)
+                old_population = copy(population)
 
                 ## evaluation: check for fitness (1.0)
                 previous_chromosomes = list(population.chromosomes[:])
                 previous_chromosomes.sort(key=lambda x: x.fitness, reverse=True)
                 if previous_chromosomes[0].fitness == 1.00:
-                    return deepcopy(population) ## 5: while (terminate condition)
+                    return copy(population) ## 5: while (terminate condition)
 
                 ## crossover and mutation
                 new_population = Population(self._population_size, equation)
                 new_population = self.crossover_and_mutation(new_population, population, generation)
 
                 ## save crossoverd and mutated population
-                population = deepcopy(new_population)
+                population = copy(new_population)
 
                 #################
                 ## perform greedy
                 if new_population.best.fitness == 1.0:
-                    return deepcopy(new_population)
+                    return copy(new_population) ## terminate condition
 
                 ## randomly select chromosome
                 rand_chr_index = random.randint(0, self._population_size - 1)
-                chromosome = population.chromosomes[rand_chr_index]
+                chromosome = copy(population.chromosomes[rand_chr_index])
 
                 ## randomly select variable out of genes
                 rand_gen_index = random.randint(0, len(chromosome.genes) - 1)
@@ -443,17 +447,16 @@ class AdaptiveGenetic(StandardGenetic):
 
 
                 ## perform flip on population if applicable
-                if population.best.fitness >= old_population.best.fitness:
-                    if max_fit_after_turning > population.best.fitness:
-                        new_population.chromosomes[rand_chr_index] = new_chromosome
-                if new_population.best.fitness > old_population.best.fitness \
-                    or max_fit_after_turning < old_population.best.fitness:
+                if new_population.best.fitness >= old_population.best.fitness:
+                    if max_fit_after_turning >= new_population.best.fitness:
+                        new_population.chromosomes[rand_chr_index] = copy(new_chromosome)
+                else:
                     sorted_chromosomes = list(new_population.chromosomes)
                     sorted_chromosomes.sort(key=lambda x: x.fitness, reverse=True)
                     sorted_chromosomes[0].genes = old_population.best.genes ## replace the best in current gen with the best in older gen
-                    population.chromosomes = deepcopy(sorted_chromosomes)
-                else:
-                    population = deepcopy(new_population)
+                    new_population.chromosomes = copy(sorted_chromosomes)
+
+                population = copy(new_population)
 
 
                 ## print result for generation if verbose issued
@@ -462,4 +465,4 @@ class AdaptiveGenetic(StandardGenetic):
                           (generation, population.best.fitness, restart))
 
         ## return evolved population
-        return deepcopy(population)
+        return population

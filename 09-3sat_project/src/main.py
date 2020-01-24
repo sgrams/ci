@@ -19,7 +19,7 @@ def main():
     ## test genetic algorithm
     #crossover_rate = 0.9
     #mutation_rate = 0.08
-    population_size = 80
+    population_size = 50
     generations = 10000
     #elitism = True
 
