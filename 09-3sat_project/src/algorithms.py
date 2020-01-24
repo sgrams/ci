@@ -108,9 +108,10 @@ class DPLL():
 
     def run(self, equation) -> list:
         """ executes DPLL against given equation """
+        # pylint: disable-msg=unnecessary-lambda
         solution = self.backtrack(equation.literals, [])
         if solution:
-            solution += [x for x in range(1, equation.variables) \
+            solution += [x for x in range(1, equation.variables + 1) \
                          if x not in solution and -x not in solution]
             solution.sort(key=lambda x: abs(x))
 
@@ -182,9 +183,10 @@ class StandardGenetic():
 
         return Chromosome(chromosome.equation, genes)
 
-    def run(self, equation, time_limit=200.0) -> Population:
+    def run(self, equation, time_limit=200.0, verbose=False, stop_if_satisfied=True) -> Population:
         """ executes SGA against given equation """
         # pylint: disable-msg=too-many-locals
+        # pylint: disable-msg=too-many-branches
 
         ## create initial population
         population = Population(self._population_size, equation)
@@ -193,9 +195,17 @@ class StandardGenetic():
         ## save start time
         time_start = timer()
         ## iterate over generations but end if timelimit is hit
-        for _ in range(self._generations):
+        for generation in range(self._generations):
+            ## introduce time limit
             if timer() - time_start >= time_limit:
                 break
+
+            ## check for fitness (1.0)
+            if stop_if_satisfied is True:
+                previous_chromosomes = list(population.chromosomes[:])
+                previous_chromosomes.sort(key=lambda x: x.fitness, reverse=True)
+                if previous_chromosomes[0].fitness == 1.00:
+                    break
 
             ## create new population
             new_population = Population(self._population_size, equation)
@@ -224,8 +234,6 @@ class StandardGenetic():
 
             ## elitism: keep the best individual from previous generation
             if self._elitism is True:
-                previous_chromosomes = list(population.chromosomes[:])
-                previous_chromosomes.sort(key=lambda x: x.fitness, reverse=True)
                 new_population.push(previous_chromosomes[0])
                 new_population.push(previous_chromosomes[1])
 
@@ -239,8 +247,10 @@ class StandardGenetic():
 
                 for supplement in population_supplements:
                     new_population.push(supplement)
-            print(population.best.fitness)
             population = deepcopy(new_population)
+            if verbose is True:
+                if generation % 10 == 0:
+                    print("generation %i: fitness=%f" % (generation, population.best.fitness))
 
         ## return evolved population
         return deepcopy(population)

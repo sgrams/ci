@@ -10,28 +10,30 @@ from algorithms import DPLL
 
 def main():
     """ main function """
-    dimacs = Dimacs(filepath="../data/random_ksat.dimacs")
-    equation = dimacs.equation
+    dimacs = Dimacs(filepath="../data/BMS/BMS_k3_n100_m429_0.cnf")
+    equation = dimacs.parse()
+    is_file_valid = dimacs.validate()
+    print(is_file_valid)
 
     ## test genetic algorithm
     crossover_rate = 0.9
-    mutation_rate = 0.01
-    population_size = 50
-    generations = 100
-    elitism = False
+    mutation_rate = 0.08
+    population_size = 300
+    generations = 10000
+    elitism = True
 
     genetic_algorithm = StandardGenetic([crossover_rate, mutation_rate], elitism,
                                         population_size, generations)
     start_time = timer()
-    best_population = genetic_algorithm.run(equation)
+    best_population = genetic_algorithm.run(equation, verbose=True)
     end_time = timer()
 
     print(elitism)
     print(equation.variables)
     print(equation.clauses)
     print(best_population.best.valid)
-    print(best_population.best.genes)
-    print("time="+str(end_time - start_time))
+    print(best_population.best.fitness)
+    print("time = " + str(end_time - start_time))
 
     dpll = DPLL()
     solution = dpll.run(equation)
