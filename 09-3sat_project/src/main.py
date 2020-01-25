@@ -134,7 +134,7 @@ def main():
 
     ## IAGA - improved adaptive genetic algorithm
     ## statically set rates
-    restart_ratio = 20
+    restart_ratio = 100
     fzero = 0.75
 
     ## tests
