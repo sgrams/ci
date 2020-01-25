@@ -49,7 +49,7 @@ def main():
         elif opt in ('-o', '--output'):
             output_dir = arg
         elif opt in ('-i', '--iterations'):
-            iterations = arg
+            iterations = int(arg)
         else:
             usage()
             sys.exit(1)
