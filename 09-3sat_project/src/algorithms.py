@@ -214,9 +214,7 @@ class StandardGenetic():
             new_population = Population(self._population_size, equation)
 
             ## fitness calculation
-            best_population = previous_chromosomes[:int(self._population_size / 2)]
-            best_population += best_population
-            fitnesses = [chromosome.fitness for chromosome in best_population]
+            fitnesses = [chromosome.fitness for chromosome in population]
 
             ## proper evolution
             if self._elitism is True:
@@ -320,7 +318,13 @@ class AdaptiveGenetic(StandardGenetic):
                                population: Population, generation: int):
         """ crossover and mutation """
         infinitesimal = 0.00000000000000001
-        fitnesses = [chromosome.fitness for chromosome in population]
+
+        previous_chromosomes = list(population.chromosomes[:])
+        previous_chromosomes.sort(key=lambda x: x.fitness, reverse=True)
+
+        best_population = previous_chromosomes[:int(self._population_size / 2)]
+        best_population += best_population
+        fitnesses = [chromosome.fitness for chromosome in best_population]
         for _ in range(len(population)):
             ## crossover and mutation operation (based on g ≤ 0.75 * G)
             avg_fit = self.calc_avg_fitness(population)
