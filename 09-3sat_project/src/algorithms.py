@@ -6,7 +6,6 @@ Stanislaw Grams <sjg@fmdx.pl>
 import os
 import random
 from copy import copy
-from copy import deepcopy
 from timeit import default_timer as timer
 from basic_types import Chromosome
 from basic_types import Population
@@ -186,6 +185,13 @@ class StandardGenetic():
 
         return Chromosome(chromosome.equation, genes)
 
+    def pick_parents(self, population, fitnesses):
+        """ randomly picks parents A and B from given population """
+        parent_a = population[self.selection(fitnesses)]
+        parent_b = population[self.selection(fitnesses)]
+
+        return parent_a, parent_b
+
     def run(self, equation, time_limit=200.0, verbose=False, stop_if_satisfied=True) -> Population:
         """ executes SGA against given equation """
         # pylint: disable-msg=too-many-locals
@@ -213,19 +219,18 @@ class StandardGenetic():
             ## create new population
             new_population = Population(self._population_size, equation)
 
-            ## fitness calculation
-            fitnesses = [chromosome.fitness for chromosome in population]
-
             ## proper evolution
             if self._elitism is True:
                 range_offset = 2
             else:
                 range_offset = 0
 
+            ## fitness calculation
+            fitnesses = [chromosome.fitness for chromosome in population]
+
             ## selection operation
             for _ in range(len(population) - range_offset):
-                parent_a = population[self.selection(fitnesses)]
-                parent_b = population[self.selection(fitnesses)]
+                parent_a, parent_b = self.pick_parents(population, fitnesses)
 
                 if random.random() <= self._crossover_rate:
                     ## crossover
@@ -254,7 +259,7 @@ class StandardGenetic():
                     new_population.push(supplement)
 
             ## new_population is the new population
-            population = copy(new_population)
+            population = new_population
 
             ## print result for generation if verbose issued
             if verbose is True:
@@ -266,14 +271,15 @@ class StandardGenetic():
 
 class AdaptiveGenetic(StandardGenetic):
     """ implements improved adaptive genetic algorithm """
-    def __init__(self, restart_rate: int,
-                 population_size: int, generations: int):
+    def __init__(self, population_size: int, generations: int,
+                 restart_rate: int, fzero=1.0):
         StandardGenetic.__init__(self, [0.00, 0.00], False, population_size, \
                                  generations)
-        random.seed(a=os.urandom(1))
         self._restart_rate = restart_rate
         self._population_size = population_size
         self._generations = generations
+        self._fzero = fzero
+        self._infsim = 0.00000000000000001
 
     @staticmethod
     def calc_avg_fitness(population: Population) -> float:
@@ -314,17 +320,41 @@ class AdaptiveGenetic(StandardGenetic):
         """ calculates M2 """
         return len(population.chromosomes) - self.calc_m1(population)
 
-    def crossover_and_mutation(self, new_population: Population,
-                               population: Population, generation: int):
+    def find_best_population(self, population: Population) -> Population:
+        """ finds best population (1/2 best * 2) """
+        best_chromosomes = list(population.chromosomes[:])
+        best_chromosomes.sort(key=lambda x: x.fitness, reverse=True)
+
+        best_chromosomes = best_chromosomes[:int(self._population_size / 2)] + \
+                           best_chromosomes[:int(self._population_size / 2)]
+
+        best_population = Population(population.equation, self._population_size)
+        best_population.chromosomes = best_chromosomes
+
+        return best_population
+
+    @staticmethod
+    def fill_population(population: Population, source: Population) -> Population:
+        """ fills population to initialized population sized """
+        population_diff = len(source) - len(population)
+        if population_diff > 0:
+            previous_chromosomes = list(source.chromosomes[:])
+            previous_chromosomes.sort(key=lambda x: x.fitness, reverse=True)
+            population_supplements = previous_chromosomes[:population_diff]
+            for supplement in population_supplements:
+                population.push(supplement)
+        return population
+
+    def crossover_and_mutation(self, population: Population, generation: int):
+        # pylint: disable-msg=too-many-locals
+        # pylint: disable-msg=too-many-branches
         """ crossover and mutation """
-        infinitesimal = 0.00000000000000001
+        new_population = Population(population.equation, self._population_size)
+        best_population = self.find_best_population(population)
 
-        previous_chromosomes = list(population.chromosomes[:])
-        previous_chromosomes.sort(key=lambda x: x.fitness, reverse=True)
-
-        best_population = previous_chromosomes[:int(self._population_size / 2)]
-        best_population += best_population
+        ## fitness calculation
         fitnesses = [chromosome.fitness for chromosome in best_population]
+
         for _ in range(len(population)):
             ## crossover and mutation operation (based on g ≤ 0.75 * G)
             avg_fit = self.calc_avg_fitness(population)
@@ -332,10 +362,9 @@ class AdaptiveGenetic(StandardGenetic):
             max_fit = self.calc_max_fitness(population)
             var_m1 = self.calc_m1(population)
             var_m2 = self.calc_m2(population)
-            fzero = 1.0
 
-            parent_a = population[self.selection(fitnesses)]
-            parent_b = population[self.selection(fitnesses)]
+            ## torunament
+            parent_a, parent_b = self.pick_parents(best_population, fitnesses)
 
             if parent_a.fitness > parent_b.fitness:
                 fprim = parent_a.fitness
@@ -344,64 +373,90 @@ class AdaptiveGenetic(StandardGenetic):
 
             ## adaptively calculate crossover_rate
             if generation <= 0.75 * self._generations:
-                if ((max_fit - avg_fit) / (avg_fit - min_fit + infinitesimal) < 1.0) and (var_m1 > var_m2):
-                    self._crossover_rate = 0.8 * ((max_fit - avg_fit) / (avg_fit - min_fit + infinitesimal))
+                if ((max_fit - avg_fit) / (avg_fit - min_fit + self._infsim) < 1.0) \
+                    and (var_m1 > var_m2):
+                    self._crossover_rate = \
+                    0.8 * ((max_fit - avg_fit) / (avg_fit - min_fit + self._infsim))
                 else:
                     self._crossover_rate = 0.9 - \
-                    ((0.3 * (fprim - min_fit)) / (max_fit - min_fit + infinitesimal))
+                    ((0.3 * (fprim - min_fit)) / (max_fit - min_fit + self._infsim))
             else:
-                if ((max_fit - avg_fit) / (avg_fit - min_fit + infinitesimal) < 1.0) and (var_m1 > var_m2):
-                    self._crossover_rate = 0.8 * (fzero - max_fit) / (fzero - avg_fit + infinitesimal)
+                if ((max_fit - avg_fit) / (avg_fit - min_fit + self._infsim) < 1.0) \
+                    and (var_m1 > var_m2):
+                    self._crossover_rate = \
+                    0.8 * (self._fzero - max_fit) / (self._fzero - avg_fit + self._infsim)
                 else:
                     self._crossover_rate = 0.9 - \
-                    (0.3 * (fzero - max_fit) / (fzero - fprim + infinitesimal))
+                    (0.3 * (self._fzero - max_fit) / (self._fzero - fprim + self._infsim))
+
+            ## perform crossover at calculated rate
             if random.random() <= self._crossover_rate:
-                ## crossover
                 child = self.crossover(parent_a, parent_b)
-                child_saved = child
 
                 ## mutate but decision will be taken later
-                child = self.mutation(child)
-                feps = child.fitness
+                mutated_child = self.mutation(child)
+                feps = mutated_child.fitness
 
                 ## adaptively calculate mutation rate
                 if generation <= 0.75 * self._generations:
-                    if ((max_fit - avg_fit) / (avg_fit - min_fit + infinitesimal) < 1.0) and (var_m1 > var_m2):
-                        self._mutation_rate = 0.1 * (max_fit - avg_fit) / (avg_fit - min_fit + infinitesimal)
+                    if ((max_fit - avg_fit) / (avg_fit - min_fit + self._infsim) < 1.0) \
+                        and (var_m1 > var_m2):
+                        self._mutation_rate = \
+                        0.1 * (max_fit - avg_fit) / (avg_fit - min_fit + self._infsim)
                     else:
                         self._mutation_rate = 0.1 - \
-                        (0.09 * (feps - min_fit) / (max_fit - min_fit + infinitesimal))
+                        (0.09 * (feps - min_fit) / (max_fit - min_fit + self._infsim))
                 else:
-                    if ((max_fit - avg_fit) / (avg_fit - min_fit + infinitesimal) < 1.0) and (var_m1 > var_m2):
-                        self._mutation_rate = 0.1 * (fzero - max_fit) / (fzero - avg_fit + infinitesimal)
+                    if ((max_fit - avg_fit) / (avg_fit - min_fit + self._infsim) < 1.0) \
+                        and (var_m1 > var_m2):
+                        self._mutation_rate = \
+                        0.1 * (self._fzero - max_fit) / (self._fzero - avg_fit + self._infsim)
                     else:
                         self._mutation_rate = 0.1 - \
-                        (0.09 * (fzero - max_fit) / (fzero - feps + infinitesimal))
+                        (0.09 * (self._fzero - max_fit) / (self._fzero - feps + self._infsim))
 
                 ## if rate lower than expected then restore unmutated child
                 if random.random() <= self._mutation_rate:
-                    new_population.push(child)
+                    new_population.push(mutated_child)
                 else:
-                    new_population.push(child_saved)
+                    new_population.push(child)
 
-            population_diff = len(population) - len(new_population)
-            if population_diff > 0:
-                previous_chromosomes = list(population.chromosomes[:])
-                previous_chromosomes.sort(key=lambda x: x.fitness, reverse=True)
-                population_supplements = previous_chromosomes[:population_diff]
-                for supplement in population_supplements:
-                    new_population.push(supplement)
+            ## return filled population
+            new_population = self.fill_population(new_population, population)
             return new_population
+
+    def greedy(self, population, old_population):
+        """ performs greedy operation """
+        ## randomly select chromosome
+        rand_chr_index = random.randint(0, self._population_size - 1)
+        chromosome = population.chromosomes[rand_chr_index]
+
+        ## randomly select variable out of genes
+        rand_gen_index = random.randint(0, len(chromosome.genes) - 1)
+
+        ## find fitness if variable flipped
+        new_chromosome = Chromosome(chromosome.equation, chromosome.genes)
+        new_chromosome.genes[rand_gen_index] = -new_chromosome.genes[rand_gen_index]
+        max_fit_after_turning = new_chromosome.fitness
+
+        ## perform flip on population if applicable
+        if population.best.fitness >= old_population.best.fitness:
+            if max_fit_after_turning >= population.best.fitness:
+                population.chromosomes[rand_chr_index] = new_chromosome
+        else:
+            sorted_chromosomes = list(population.chromosomes)
+            sorted_chromosomes.sort(key=lambda x: x.fitness, reverse=True)
+
+            ## replace the best chromosome of current generation with
+            ## the best chromosome of previous generation
+            sorted_chromosomes[0].genes = old_population.best.genes
+            population.chromosomes = sorted_chromosomes
+
+        return population
 
     # pylint: disable-msg=arguments-differ
     def run(self, equation, time_limit=200.0, verbose=False) -> Population:
         """ executes I_AGA against given equation """
-        # pylint: disable-msg=too-many-locals
-        # pylint: disable-msg=too-many-branches
-        # pylint: disable-msg=line-too-long
-        # pylint: disable-msg=too-many-nested-blocks
-        # pylint: disable-msg=too-many-statements
-
         ## save start time
         time_start = timer()
 
@@ -412,56 +467,27 @@ class AdaptiveGenetic(StandardGenetic):
             population.initialize() ## initial population
 
             for generation in range(self._generations):
-                ## introduce time limit
+                ## introduce time limit (explicit end condition)
                 if timer() - time_start >= time_limit:
                     break
 
-                ## save old population
-                old_population = copy(population)
+                ## save old generation
+                old_population = population
 
                 ## evaluation: check for fitness (1.0)
                 previous_chromosomes = list(population.chromosomes[:])
                 previous_chromosomes.sort(key=lambda x: x.fitness, reverse=True)
                 if previous_chromosomes[0].fitness == 1.00:
-                    return copy(population) ## 5: while (terminate condition)
+                    return population ## 5: while (terminate condition)
 
                 ## crossover and mutation
-                new_population = Population(self._population_size, equation)
-                new_population = self.crossover_and_mutation(new_population, population, generation)
+                population = self.crossover_and_mutation(population, generation)
 
-                ## save crossoverd and mutated population
-                population = copy(new_population)
-
-                #################
-                ## perform greedy
-                if new_population.best.fitness == 1.0:
-                    return copy(new_population) ## terminate condition
-
-                ## randomly select chromosome
-                rand_chr_index = random.randint(0, self._population_size - 1)
-                chromosome = copy(population.chromosomes[rand_chr_index])
-
-                ## randomly select variable out of genes
-                rand_gen_index = random.randint(0, len(chromosome.genes) - 1)
-
-                ## find fitness if variable flipped
-                new_chromosome = Chromosome(chromosome.equation, chromosome.genes)
-                new_chromosome.genes[rand_gen_index] = -new_chromosome.genes[rand_gen_index]
-                max_fit_after_turning = new_chromosome.fitness
-
-
-                ## perform flip on population if applicable
-                if new_population.best.fitness >= old_population.best.fitness:
-                    if max_fit_after_turning >= new_population.best.fitness:
-                        new_population.chromosomes[rand_chr_index] = copy(new_chromosome)
-                else:
-                    sorted_chromosomes = list(new_population.chromosomes)
-                    sorted_chromosomes.sort(key=lambda x: x.fitness, reverse=True)
-                    sorted_chromosomes[0].genes = old_population.best.genes ## replace the best in current gen with the best in older gen
-                    new_population.chromosomes = copy(sorted_chromosomes)
-
-                population = copy(new_population)
-
+                ## greedy
+                if population.best.fitness == 1.0:
+                    ## terminate if max fitness already reached
+                    return population
+                population = self.greedy(population, old_population)
 
                 ## print result for generation if verbose issued
                 if verbose is True:

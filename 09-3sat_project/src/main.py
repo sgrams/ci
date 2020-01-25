@@ -11,35 +11,37 @@ from algorithms import DPLL
 
 def main():
     """ main function """
-    dimacs = Dimacs(filepath="../data/uf20/uf20-014.cnf")
+    dimacs = Dimacs(filepath="../data/test/uf20-0900.cnf")
     equation = dimacs.parse()
     is_file_valid = dimacs.validate()
     print(is_file_valid)
 
     ## test genetic algorithm
-    #crossover_rate = 0.9
-    #mutation_rate = 0.08
+    crossover_rate = 0.9
+    mutation_rate = 0.08
     population_size = 50
-    generations = 10000
-    #elitism = True
+    generations = 1000
+    elitism = True
 
+    ## genetic
+    genetic_algorithm = StandardGenetic([crossover_rate, mutation_rate], elitism,
+                                        population_size, generations)
     start_time = timer()
-    adaptive_algorithm = AdaptiveGenetic(10, population_size, generations)
-    best_population = adaptive_algorithm.run(equation, verbose=True)
+    best_population = genetic_algorithm.run(equation, verbose=False)
     end_time = timer()
-
-    #genetic_algorithm = StandardGenetic([crossover_rate, mutation_rate], elitism,
-    #                                    population_size, generations)
-    #start_time = timer()
-    #best_population = genetic_algorithm.run(equation, verbose=True)
-    #end_time = timer()
-
-    #print(elitism)
-    #print(equation.variables)
-    #print(equation.clauses)
     print(best_population.best.valid)
     print(best_population.best.fitness)
-    print("time = " + str(end_time - start_time))
+    print("SGA time = " + str(end_time - start_time))
+
+    ## adaptive
+    adaptive_algorithm = AdaptiveGenetic(population_size, generations, 20, 0.75)
+    start_time = timer()
+    best_population = adaptive_algorithm.run(equation, verbose=False)
+    end_time = timer()
+    print(best_population.best.valid)
+    print(best_population.best.fitness)
+    print("IAGA time = " + str(end_time - start_time))
+    print("")
 
     #dpll = DPLL()
     #solution = dpll.run(equation)
